@@ -1268,6 +1268,9 @@ async function injectCustomCode(options, tauriConf) {
             'deep-link': { desktop: { schemes: [options.deepLink] } },
         };
     }
+    tauriConf.pake.camera = options.camera;
+    tauriConf.pake.microphone = options.microphone;
+    tauriConf.pake.screen_share = options.screenShare;
     tauriConf.pake.basic_auth = basicAuth;
     tauriConf.pake.multi_instance = multiInstance;
     tauriConf.pake.multi_window = multiWindow;
@@ -3571,6 +3574,7 @@ const DEFAULT_PAKE_OPTIONS = {
     install: false,
     camera: false,
     microphone: false,
+    screenShare: false,
 };
 
 function validateNumberInput(value) {
@@ -3795,11 +3799,14 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
         .addOption(new Option('--install', 'Auto-install app to /Applications (macOS) after build and remove local bundle')
         .default(DEFAULT_PAKE_OPTIONS.install)
         .hideHelp())
-        .addOption(new Option('--camera', 'Request camera permission on macOS')
+        .addOption(new Option('--camera', 'Request camera permission (macOS and Linux)')
         .default(DEFAULT_PAKE_OPTIONS.camera)
         .hideHelp())
-        .addOption(new Option('--microphone', 'Request microphone permission on macOS')
+        .addOption(new Option('--microphone', 'Request microphone permission (macOS and Linux)')
         .default(DEFAULT_PAKE_OPTIONS.microphone)
+        .hideHelp())
+        .addOption(new Option('--screen-share', 'Allow screen sharing on Linux')
+        .default(DEFAULT_PAKE_OPTIONS.screenShare)
         .hideHelp())
         .version(packageJson.version, '-v, --version')
         .configureHelp({

@@ -208,6 +208,51 @@ struct WindowBuildOptions<'a> {
     new_window_features: Option<NewWindowFeatures>,
 }
 
+/// Turn on WebRTC and answer capture permission requests per the build flags.
+/// Requests Pake does not grant fall through to WebKit's default (deny).
+#[cfg(target_os = "linux")]
+fn enable_linux_media(webview: &webkit2gtk::WebView, config: PakeConfig) {
+    use webkit2gtk::glib::{prelude::Cast, translate::ToGlibPtr, ObjectExt};
+    use webkit2gtk::{
+        DeviceInfoPermissionRequest, PermissionRequestExt, SettingsExt, UserMediaPermissionRequest,
+        UserMediaPermissionRequestExt, WebViewExt,
+    };
+
+    if let Some(settings) = webview.settings() {
+        settings.set_enable_media_stream(true);
+        settings.set_enable_webrtc(true);
+        settings.set_enable_mediasource(true);
+    }
+    webview.connect_permission_request(move |webview, request| {
+        let page_url = webview.uri().map(|uri| uri.to_string()).unwrap_or_default();
+        let allowed = if let Some(media) = request.downcast_ref::<UserMediaPermissionRequest>() {
+            // SAFETY: `media` is a live WebKitUserMediaPermissionRequest for this call.
+            let display = unsafe {
+                webkit2gtk::ffi::webkit_user_media_permission_is_for_display_device(
+                    media.to_glib_none().0,
+                ) != 0
+            };
+            config.allows_media_request(
+                &page_url,
+                media.is_for_audio_device(),
+                media.is_for_video_device(),
+                display,
+                false,
+            )
+        } else if request.is::<DeviceInfoPermissionRequest>() {
+            config.allows_media_request(&page_url, false, false, false, true)
+        } else {
+            return false;
+        };
+        if allowed {
+            request.allow();
+        } else {
+            request.deny();
+        }
+        true
+    });
+}
+
 fn is_blank_popup_url(url: &Url) -> bool {
     url.scheme() == "about" && url.path() == "blank"
 }
@@ -840,6 +885,16 @@ fn build_window(
             set_password_autosave(&webview, password_autosave);
         }) {
             eprintln!("[Pake] Failed to access WebView2 for password autosave: {error}");
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    if config.wants_media() {
+        let media_config = config.clone();
+        if let Err(error) = window.with_webview(move |webview| {
+            enable_linux_media(&webview.inner(), media_config);
+        }) {
+            eprintln!("[Pake] Failed to access WebKitGTK for media permissions: {error}");
         }
     }
 

@@ -536,7 +536,7 @@ pake https://github.com --name GitHub --install
 
 #### [camera]
 
-Request camera access on macOS by adding the `com.apple.security.device.camera` entitlement to the packaged app. Default is `false`. macOS only; ignored on Windows and Linux. Useful for web apps that need webcam access, such as video calls or QR scanning.
+Request camera access on macOS by adding the `com.apple.security.device.camera` entitlement to the packaged app. On Linux it enables WebRTC in WebKitGTK and grants the page's camera requests (and device enumeration) without a prompt, but only on the entry URL's origin. Default is `false`. Ignored on Windows. Useful for web apps that need webcam access, such as video calls or QR scanning. On Linux, `RTCPeerConnection` also needs the GStreamer WebRTC plugins (`gst-plugins-bad` on Arch, `gstreamer1.0-plugins-bad` and `gstreamer1.0-nice` on Debian/Ubuntu).
 
 ```shell
 --camera
@@ -547,13 +547,24 @@ pake https://meet.google.com --name Meet --camera
 
 #### [microphone]
 
-Request microphone access on macOS by adding the `com.apple.security.device.audio-input` entitlement to the packaged app. Default is `false`. macOS only; ignored on Windows and Linux.
+Request microphone access on macOS by adding the `com.apple.security.device.audio-input` entitlement to the packaged app. On Linux it grants the page's microphone requests the same way as `--camera`. Default is `false`. Ignored on Windows.
 
 ```shell
 --microphone
 
 # Example: Combine camera and microphone for a conferencing app
 pake https://meet.google.com --name Meet --camera --microphone
+```
+
+#### [screen-share]
+
+Linux only: enable WebRTC and grant the page's `getDisplayMedia()` screen sharing requests on the entry URL's origin. WebKitGTK then asks the desktop through `xdg-desktop-portal` (ScreenCast + PipeWire on Wayland), so the user still picks the screen or window in the system dialog. Default is `false`. Ignored on macOS and Windows.
+
+```shell
+--screen-share
+
+# Example: Conferencing app with camera, microphone and screen sharing
+pake https://meet.google.com --name Meet --camera --microphone --screen-share
 ```
 
 #### [multi-instance]

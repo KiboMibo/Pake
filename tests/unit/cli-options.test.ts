@@ -177,6 +177,23 @@ describe('CLI options', () => {
     expect(validateNumberInput('0')).toBe(0);
   });
 
+  it('parses --screen-share alongside the media flags', () => {
+    const command = new Command();
+    for (const long of ['--camera', '--microphone', '--screen-share']) {
+      const option = program.options.find((item) => item.long === long);
+      expect(option?.defaultValue).toBe(false);
+      command.addOption(option!);
+    }
+    command.parse(['--camera', '--microphone', '--screen-share'], {
+      from: 'user',
+    });
+    expect(command.opts()).toMatchObject({
+      camera: true,
+      microphone: true,
+      screenShare: true,
+    });
+  });
+
   it('exposes --deep-link and accepts only valid URI schemes', () => {
     const option = program.options.find((item) => item.long === '--deep-link');
     expect(option?.defaultValue).toBe('');

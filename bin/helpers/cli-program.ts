@@ -335,13 +335,21 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
         .hideHelp(),
     )
     .addOption(
-      new Option('--camera', 'Request camera permission on macOS')
+      new Option('--camera', 'Request camera permission (macOS and Linux)')
         .default(DEFAULT.camera)
         .hideHelp(),
     )
     .addOption(
-      new Option('--microphone', 'Request microphone permission on macOS')
+      new Option(
+        '--microphone',
+        'Request microphone permission (macOS and Linux)',
+      )
         .default(DEFAULT.microphone)
+        .hideHelp(),
+    )
+    .addOption(
+      new Option('--screen-share', 'Allow screen sharing on Linux')
+        .default(DEFAULT.screenShare)
         .hideHelp(),
     )
     .version(packageJson.version, '-v, --version')

@@ -276,12 +276,17 @@
     },
     "camera": {
       "type": "boolean",
-      "description": "macOS only: request camera permission.",
+      "description": "macOS and Linux: request camera permission.",
       "default": false
     },
     "microphone": {
       "type": "boolean",
-      "description": "macOS only: request microphone permission.",
+      "description": "macOS and Linux: request microphone permission.",
+      "default": false
+    },
+    "screenShare": {
+      "type": "boolean",
+      "description": "Linux only: allow screen sharing (getDisplayMedia).",
       "default": false
     }
   }

@@ -530,7 +530,7 @@ pake https://github.com --name GitHub --install
 
 #### [camera]
 
-在 macOS 上申请摄像头使用权限（添加 `com.apple.security.device.camera` entitlement），默认为 `false`，Windows 和 Linux 忽略此选项，适用于视频通话、扫码等网页场景。
+在 macOS 上申请摄像头使用权限（添加 `com.apple.security.device.camera` entitlement），在 Linux 上会开启 WebKitGTK 的 WebRTC，并在入口 URL 同源页面下直接允许摄像头请求（及设备枚举）。默认为 `false`，Windows 忽略此选项，适用于视频通话、扫码等网页场景。Linux 上使用 `RTCPeerConnection` 还需要安装 GStreamer WebRTC 插件（Arch 为 `gst-plugins-bad`，Debian/Ubuntu 为 `gstreamer1.0-plugins-bad` 与 `gstreamer1.0-nice`）。
 
 ```shell
 --camera
@@ -541,13 +541,24 @@ pake https://meet.google.com --name Meet --camera
 
 #### [microphone]
 
-在 macOS 上申请麦克风使用权限（添加 `com.apple.security.device.audio-input` entitlement），默认为 `false`，Windows 和 Linux 忽略此选项。
+在 macOS 上申请麦克风使用权限（添加 `com.apple.security.device.audio-input` entitlement），在 Linux 上与 `--camera` 相同方式允许麦克风请求。默认为 `false`，Windows 忽略此选项。
 
 ```shell
 --microphone
 
 # 示例：为会议类应用同时开启摄像头与麦克风权限
 pake https://meet.google.com --name Meet --camera --microphone
+```
+
+#### [screen-share]
+
+仅 Linux：开启 WebRTC，并在入口 URL 同源页面下允许 `getDisplayMedia()` 屏幕共享请求。WebKitGTK 会通过 `xdg-desktop-portal`（Wayland 下为 ScreenCast + PipeWire）弹出系统选择框，由用户选择屏幕或窗口。默认为 `false`，macOS 和 Windows 忽略此选项。
+
+```shell
+--screen-share
+
+# 示例：会议类应用同时开启摄像头、麦克风与屏幕共享
+pake https://meet.google.com --name Meet --camera --microphone --screen-share
 ```
 
 #### [multi-instance]

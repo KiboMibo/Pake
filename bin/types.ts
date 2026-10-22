@@ -168,11 +168,14 @@ export interface PakeCliOptions {
   // Auto-install app to /Applications (macOS) after build, default false
   install: boolean;
 
-  // Request camera entitlement on macOS, default false
+  // Request camera access (macOS entitlement, Linux WebKit permission), default false
   camera: boolean;
 
-  // Request microphone entitlement on macOS, default false
+  // Request microphone access (macOS entitlement, Linux WebKit permission), default false
   microphone: boolean;
+
+  // Allow screen sharing (getDisplayMedia) on Linux, default false
+  screenShare: boolean;
 }
 
 export interface PakeAppOptions extends PakeCliOptions {
@@ -225,6 +228,9 @@ export interface PakeConfig {
   proxy_url: string;
   download_dir: string;
   deep_link: string;
+  camera: boolean;
+  microphone: boolean;
+  screen_share: boolean;
   basic_auth: boolean;
   multi_instance: boolean;
   multi_window: boolean;

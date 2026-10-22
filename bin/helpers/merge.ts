@@ -498,6 +498,9 @@ async function injectCustomCode(
       'deep-link': { desktop: { schemes: [options.deepLink] } },
     };
   }
+  tauriConf.pake.camera = options.camera;
+  tauriConf.pake.microphone = options.microphone;
+  tauriConf.pake.screen_share = options.screenShare;
   tauriConf.pake.basic_auth = basicAuth;
   tauriConf.pake.multi_instance = multiInstance;
   tauriConf.pake.multi_window = multiWindow;

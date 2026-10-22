@@ -124,6 +124,15 @@ pub struct PakeConfig {
     /// Custom URL scheme (without `://`) handled as a deep link; empty disables it.
     #[serde(default)]
     pub deep_link: String,
+    /// Media capture grants. macOS turns camera/microphone into entitlements
+    /// at build time; Linux answers WebKitGTK permission requests with them.
+    #[serde(default)]
+    pub camera: bool,
+    #[serde(default)]
+    pub microphone: bool,
+    /// Linux only: allow getDisplayMedia screen capture requests.
+    #[serde(default)]
+    pub screen_share: bool,
     /// Prompt for HTTP Basic credentials at runtime on macOS. WKWebView does
     /// not provide its own 401 login dialog, while Windows and Linux WebViews
     /// handle this flow natively.
@@ -145,6 +154,41 @@ pub struct PakeConfig {
 impl PakeConfig {
     pub fn show_system_tray(&self) -> bool {
         self.system_tray.copied()
+    }
+
+    pub fn wants_media(&self) -> bool {
+        self.camera || self.microphone || self.screen_share
+    }
+
+    /// Whether a WebKitGTK capture request from the top-level `page_url` is
+    /// granted. Only the configured entry origin qualifies; display capture
+    /// needs `screen_share`, device capture needs the flag for every kind
+    /// requested, and `device_info` (enumerateDevices) needs camera or mic.
+    pub fn allows_media_request(
+        &self,
+        page_url: &str,
+        audio: bool,
+        video: bool,
+        display: bool,
+        device_info: bool,
+    ) -> bool {
+        let same_origin = match (
+            Url::parse(page_url),
+            self.windows.first().map(|w| Url::parse(&w.url)),
+        ) {
+            (Ok(page), Some(Ok(entry))) => {
+                matches!(page.scheme(), "http" | "https") && page.origin() == entry.origin()
+            }
+            _ => false,
+        };
+        let granted = if device_info {
+            self.camera || self.microphone
+        } else if display {
+            self.screen_share
+        } else {
+            (audio || video) && (!audio || self.microphone) && (!video || self.camera)
+        };
+        same_origin && granted
     }
 
     pub fn remote_capability(
@@ -211,6 +255,36 @@ mod tests {
         config.windows[0].url = url.into();
         config.windows[0].url_type = "web".into();
         config
+    }
+
+    #[test]
+    fn media_requests_follow_flags_and_entry_origin() {
+        let mut config = config_for("https://stream.example.com/room");
+        let page = "https://stream.example.com/call/1";
+        // Legacy configs without the fields grant nothing.
+        assert!(!config.allows_media_request(page, true, true, false, false));
+        assert!(!config.allows_media_request(page, false, false, false, true));
+
+        config.microphone = true;
+        assert!(config.allows_media_request(page, true, false, false, false));
+        assert!(!config.allows_media_request(page, true, true, false, false));
+        assert!(config.allows_media_request(page, false, false, false, true));
+        assert!(!config.allows_media_request(page, false, true, true, false));
+
+        config.camera = true;
+        config.screen_share = true;
+        assert!(config.allows_media_request(page, true, true, false, false));
+        assert!(config.allows_media_request(page, false, true, true, false));
+        assert!(!config.allows_media_request(page, false, false, false, false));
+        for other in [
+            "https://evil.example.com/",
+            "http://stream.example.com/",
+            "https://stream.example.com:8443/",
+            "about:blank",
+            "not a url",
+        ] {
+            assert!(!config.allows_media_request(other, true, true, false, false));
+        }
     }
 
     #[test]
