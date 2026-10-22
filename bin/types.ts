@@ -89,6 +89,9 @@ export interface PakeCliOptions {
   // Download directory in the packaged app; empty uses the system default.
   downloadDir: string;
 
+  // Custom URL scheme the app handles (deep links); empty disables it.
+  deepLink: string;
+
   // Set Api Proxy
   proxyUrl: string;
 
@@ -221,6 +224,7 @@ export interface PakeConfig {
   system_tray_path: string;
   proxy_url: string;
   download_dir: string;
+  deep_link: string;
   basic_auth: boolean;
   multi_instance: boolean;
   multi_window: boolean;

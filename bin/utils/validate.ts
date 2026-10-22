@@ -69,3 +69,13 @@ export function validateDownloadDirInput(value: string): string {
   }
   return value;
 }
+
+export function validateDeepLinkInput(value: string): string {
+  if (value !== '' && !/^[a-z][a-z0-9+.-]*$/.test(value)) {
+    throw new PakeError('Invalid deep link scheme.', {
+      code: 'INVALID_INPUT',
+      hint: 'Use a lowercase URL scheme without "://", matching ^[a-z][a-z0-9+.-]*$ (e.g. myapp).',
+    });
+  }
+  return value;
+}

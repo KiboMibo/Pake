@@ -74,6 +74,11 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
       'App download directory (absolute path or ~/path; default: system Downloads)',
       DEFAULT.downloadDir,
     )
+    .option(
+      '--deep-link <scheme>',
+      'Open <scheme>:// links in the app (custom URL scheme, e.g. myapp)',
+      DEFAULT.deepLink,
+    )
     .option('--debug', 'Debug build and more output', DEFAULT.debug)
     .option(
       '--json',

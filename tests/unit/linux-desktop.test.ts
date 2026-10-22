@@ -40,6 +40,25 @@ describe('buildLinuxDesktopContent', () => {
   });
 });
 
+describe('buildLinuxDesktopContent deep link', () => {
+  it('declares the scheme handler and passes the URL only when configured', () => {
+    const plain = buildLinuxDesktopContent('App', undefined, 'pake-app');
+    expect(plain).not.toContain('x-scheme-handler');
+    expect(plain).toContain('Exec=pake-app\n');
+
+    const linked = buildLinuxDesktopContent(
+      'App',
+      undefined,
+      'pake-app',
+      'wbband',
+    );
+    expect(linked).toContain(
+      'MimeType=text/html;text/xml;application/xhtml_xml;x-scheme-handler/wbband;',
+    );
+    expect(linked).toContain('Exec=pake-app %u\n');
+  });
+});
+
 describe('applyLinuxDesktopTemplate', () => {
   it('renders the Pake entry through the bundler template instead of shipping a second file', () => {
     const linuxBundle: Parameters<typeof applyLinuxDesktopTemplate>[0] = {

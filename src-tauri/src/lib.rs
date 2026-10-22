@@ -41,6 +41,26 @@ use app::{
 };
 use util::get_pake_config;
 
+/// Navigate the main window to the page a deep link points at.
+fn open_deep_link(app: &tauri::AppHandle, start_url: &str, link: &Url, focus: bool) {
+    let Some(target) = util::deep_link_target(start_url, link) else {
+        eprintln!("[Pake] Ignoring deep link that cannot map to the app origin: {link}");
+        return;
+    };
+    let Some(window) = app.get_webview_window("pake") else {
+        return;
+    };
+    if let Err(error) = window.navigate(target) {
+        eprintln!("[Pake] Failed to open deep link: {error}");
+    }
+    if focus {
+        let _ = window.unminimize();
+        let _ = window.show();
+        reapply_window_icon(&window);
+        let _ = window.set_focus();
+    }
+}
+
 /// Placeholder documents used before the real target URL navigates (e.g. macOS
 /// cert-bypass starts on about:blank). Revealing on these would reintroduce the
 /// blank-window flash the page-load gate is meant to prevent.
@@ -357,6 +377,12 @@ pub fn run_app() {
         ));
     }
 
+    // Registered after single-instance, whose deep-link feature forwards a
+    // second instance's URL here.
+    if !pake_config.deep_link.is_empty() {
+        app_builder = app_builder.plugin(tauri_plugin_deep_link::init());
+    }
+
     // Reveal hidden windows after the first real document finishes loading so
     // slow WKWebView cold starts do not expose an empty but interactive shell.
     // - Main label "pake": once-only latch + start_to_tray opt-out.
@@ -442,6 +468,28 @@ pub fn run_app() {
             // --- Menu Construction End ---
 
             let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
+
+            if !pake_config.deep_link.is_empty() {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                // Packaged desktop entries declare the scheme; this also covers
+                // AppImages and per-user installs that were never registered.
+                #[cfg(target_os = "linux")]
+                if let Err(error) = app.deep_link().register_all() {
+                    eprintln!("[Pake] Failed to register deep link scheme: {error}");
+                }
+                let start_url = pake_config.windows[0].url.clone();
+                if let Ok(Some(urls)) = app.deep_link().get_current() {
+                    for url in &urls {
+                        open_deep_link(app.app_handle(), &start_url, url, false);
+                    }
+                }
+                let handle = app.app_handle().clone();
+                app.deep_link().on_open_url(move |event| {
+                    for url in event.urls() {
+                        open_deep_link(&handle, &start_url, &url, true);
+                    }
+                });
+            }
 
             // An explicit --dark-mode wins over the desktop preference.
             #[cfg(target_os = "linux")]

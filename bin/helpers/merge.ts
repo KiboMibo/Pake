@@ -249,6 +249,7 @@ export function buildLinuxDesktopContent(
   name: string,
   title: string | undefined,
   linuxBinaryName: string,
+  deepLink = '',
 ): string {
   const chineseName = title && /[\u4e00-\u9fa5]/.test(title) ? title : null;
 
@@ -258,10 +259,10 @@ Type=Application
 Name=${name}
 ${chineseName ? `Name[zh_CN]=${chineseName}` : ''}
 Comment=${name}
-Exec=${linuxBinaryName}
+Exec=${linuxBinaryName}${deepLink ? ' %u' : ''}
 Icon=${linuxBinaryName}
 Categories=Network;WebBrowser;Utility;
-MimeType=text/html;text/xml;application/xhtml_xml;
+MimeType=text/html;text/xml;application/xhtml_xml;${deepLink ? `x-scheme-handler/${deepLink};` : ''}
 StartupNotify=true
 StartupWMClass=${linuxBinaryName}
 Terminal=false
@@ -302,6 +303,7 @@ async function mergeLinuxConfig(
     name,
     options.title,
     linuxBinaryName,
+    options.deepLink,
   );
 
   const srcAssetsDir = path.join(npmDirectory, 'src-tauri/assets');
@@ -490,6 +492,12 @@ async function injectCustomCode(
 
   tauriConf.pake.proxy_url = proxyUrl || '';
   tauriConf.pake.download_dir = options.downloadDir || '';
+  tauriConf.pake.deep_link = options.deepLink || '';
+  if (options.deepLink) {
+    tauriConf.plugins = {
+      'deep-link': { desktop: { schemes: [options.deepLink] } },
+    };
+  }
   tauriConf.pake.basic_auth = basicAuth;
   tauriConf.pake.multi_instance = multiInstance;
   tauriConf.pake.multi_window = multiWindow;

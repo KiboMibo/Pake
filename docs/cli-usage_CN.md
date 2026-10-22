@@ -631,6 +631,17 @@ pake https://example.com --name MyApp --download-dir '~/Documents/MyApp'
 
 支持绝对路径（如 Windows 的 `C:\Users\Alice\Documents\MyApp`）或带引号的 `~/路径`，引号可保留 `~`，让它在应用运行时指向使用者的主目录，而非打包机器的主目录。目录不存在时会在首次下载时创建；不支持相对路径，目录不可访问时下载会失败，不会悄悄改存到其他位置。JSON 配置对应字段为 `downloadDir`，修改已有应用的下载目录需重新打包。
 
+#### [deep-link]
+
+注册自定义 URL 协议，让 `myapp://some/path` 这样的链接打开打包后的应用（或聚焦已运行的实例），并把主窗口导航到应用站点上的同一路径。
+
+```bash
+pake https://example.com/app --name MyApp --deep-link myapp
+# myapp://inbox/42?tab=unread -> https://example.com/inbox/42?tab=unread
+```
+
+协议名需为小写并匹配 `^[a-z][a-z0-9+.-]*$`，不要带 `://`。链接的路径、查询参数和片段会保留，并拼接到应用 URL 的源（协议和主机）之后。在 Linux 上，`.deb`/AppImage 的桌面文件会声明 `x-scheme-handler/<scheme>`，应用启动时也会为当前用户注册该处理程序。对应的 JSON 配置字段为 `deepLink`。
+
 #### [proxy-url]
 
 为所有网络请求配置代理服务器，支持 HTTP、HTTPS 和 SOCKS5，在 Windows 与 Linux 上直接可用，macOS 需 macOS 14+。

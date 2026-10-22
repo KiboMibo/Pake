@@ -1,7 +1,10 @@
 import { Command, InvalidArgumentError } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { getCliProgram } from '../../bin/helpers/cli-program.js';
-import { validateNumberInput } from '../../bin/utils/validate.js';
+import {
+  validateDeepLinkInput,
+  validateNumberInput,
+} from '../../bin/utils/validate.js';
 
 describe('CLI options', () => {
   const program = getCliProgram();
@@ -172,5 +175,23 @@ describe('CLI options', () => {
   it('rejects negative numeric option values', () => {
     expect(() => validateNumberInput('-100')).toThrow('Must not be negative.');
     expect(validateNumberInput('0')).toBe(0);
+  });
+
+  it('exposes --deep-link and accepts only valid URI schemes', () => {
+    const option = program.options.find((item) => item.long === '--deep-link');
+    expect(option?.defaultValue).toBe('');
+    expect(option?.hidden).toBeFalsy();
+    const command = new Command().addOption(option!);
+    command.parse(['--deep-link', 'wbband'], { from: 'user' });
+    expect(command.opts().deepLink).toBe('wbband');
+
+    for (const value of ['', 'wbband', 'my-app+v1.2']) {
+      expect(validateDeepLinkInput(value)).toBe(value);
+    }
+    for (const value of ['WbBand', '1app', 'wbband://', 'my app', '-x']) {
+      expect(() => validateDeepLinkInput(value)).toThrow(
+        'Invalid deep link scheme',
+      );
+    }
   });
 });

@@ -1097,7 +1097,7 @@ async function handleLocalFile(url, useLocalFile, tauriConf) {
     tauriConf.pake.windows[0].url = fileName;
     tauriConf.pake.windows[0].url_type = 'local';
 }
-function buildLinuxDesktopContent(name, title, linuxBinaryName) {
+function buildLinuxDesktopContent(name, title, linuxBinaryName, deepLink = '') {
     const chineseName = title && /[\u4e00-\u9fa5]/.test(title) ? title : null;
     return `[Desktop Entry]
 Version=1.0
@@ -1105,10 +1105,10 @@ Type=Application
 Name=${name}
 ${chineseName ? `Name[zh_CN]=${chineseName}` : ''}
 Comment=${name}
-Exec=${linuxBinaryName}
+Exec=${linuxBinaryName}${deepLink ? ' %u' : ''}
 Icon=${linuxBinaryName}
 Categories=Network;WebBrowser;Utility;
-MimeType=text/html;text/xml;application/xhtml_xml;
+MimeType=text/html;text/xml;application/xhtml_xml;${deepLink ? `x-scheme-handler/${deepLink};` : ''}
 StartupNotify=true
 StartupWMClass=${linuxBinaryName}
 Terminal=false
@@ -1132,7 +1132,7 @@ async function mergeLinuxConfig(options, name, tauriConf, linuxBinaryName) {
     delete linuxBundle.deb.files;
     const linuxName = generateLinuxPackageName(name);
     const desktopFileName = `com.pake.${linuxName}.desktop`;
-    const desktopContent = buildLinuxDesktopContent(name, options.title, linuxBinaryName);
+    const desktopContent = buildLinuxDesktopContent(name, options.title, linuxBinaryName, options.deepLink);
     const srcAssetsDir = path.join(npmDirectory, 'src-tauri/assets');
     const srcDesktopFilePath = path.join(srcAssetsDir, desktopFileName);
     await fsExtra.ensureDir(srcAssetsDir);
@@ -1262,6 +1262,12 @@ async function injectCustomCode(options, tauriConf) {
     }
     tauriConf.pake.proxy_url = proxyUrl || '';
     tauriConf.pake.download_dir = options.downloadDir || '';
+    tauriConf.pake.deep_link = options.deepLink || '';
+    if (options.deepLink) {
+        tauriConf.plugins = {
+            'deep-link': { desktop: { schemes: [options.deepLink] } },
+        };
+    }
     tauriConf.pake.basic_auth = basicAuth;
     tauriConf.pake.multi_instance = multiInstance;
     tauriConf.pake.multi_window = multiWindow;
@@ -3535,6 +3541,7 @@ const DEFAULT_PAKE_OPTIONS = {
     systemTrayIcon: '',
     proxyUrl: '',
     downloadDir: '',
+    deepLink: '',
     basicAuth: false,
     debug: false,
     json: false,
@@ -3623,6 +3630,15 @@ function validateDownloadDirInput(value) {
     }
     return value;
 }
+function validateDeepLinkInput(value) {
+    if (value !== '' && !/^[a-z][a-z0-9+.-]*$/.test(value)) {
+        throw new PakeError('Invalid deep link scheme.', {
+            code: 'INVALID_INPUT',
+            hint: 'Use a lowercase URL scheme without "://", matching ^[a-z][a-z0-9+.-]*$ (e.g. myapp).',
+        });
+    }
+    return value;
+}
 
 function getCliProgram() {
     const { green, yellow } = chalk;
@@ -3660,6 +3676,7 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
         return previous ? [...previous, ...files] : files;
     }, DEFAULT_PAKE_OPTIONS.inject)
         .option('--download-dir <path>', 'App download directory (absolute path or ~/path; default: system Downloads)', DEFAULT_PAKE_OPTIONS.downloadDir)
+        .option('--deep-link <scheme>', 'Open <scheme>:// links in the app (custom URL scheme, e.g. myapp)', DEFAULT_PAKE_OPTIONS.deepLink)
         .option('--debug', 'Debug build and more output', DEFAULT_PAKE_OPTIONS.debug)
         .option('--json', 'Machine-readable output: logs to stderr, one JSON result on stdout', DEFAULT_PAKE_OPTIONS.json)
         .option('--config <path>', 'Load options from a JSON config file (fields mirror CLI options, see schema/pake.schema.json)')
@@ -4020,6 +4037,7 @@ program.action(async (urlArg, options) => {
             }
         }
         validateDownloadDirInput(options.downloadDir);
+        validateDeepLinkInput(options.deepLink);
         if (!url) {
             if (jsonMode) {
                 throw new PakeError('No URL or local path to package.', {

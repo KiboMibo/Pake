@@ -393,6 +393,19 @@ pub fn check_file_or_append(file_path: &str) -> String {
     new_path.to_string_lossy().into_owned()
 }
 
+/// Map `<scheme>://<rest>` onto `<origin of start_url>/<rest>`, keeping the
+/// link's path, query, and fragment. Returns None for opaque start URLs or when
+/// the result would leave the app's origin.
+pub fn deep_link_target(start_url: &str, link: &tauri::Url) -> Option<tauri::Url> {
+    let origin = tauri::Url::parse(start_url).ok()?.origin();
+    if !origin.is_tuple() {
+        return None;
+    }
+    let rest = link.as_str().split_once(':')?.1.trim_start_matches('/');
+    let target = tauri::Url::parse(&format!("{}/{rest}", origin.ascii_serialization())).ok()?;
+    (target.origin() == origin).then_some(target)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -802,5 +815,39 @@ mod tests {
         ] {
             assert!(!is_valid_identifier(id), "{id}");
         }
+    }
+
+    #[test]
+    fn deep_link_target_maps_onto_app_origin() {
+        let map = |link: &str| {
+            deep_link_target(
+                "https://example.com:8443/app/home?x=1",
+                &tauri::Url::parse(link).unwrap(),
+            )
+            .map(|url| url.to_string())
+        };
+        assert_eq!(
+            map("myapp://inbox/42?tab=unread#top").as_deref(),
+            Some("https://example.com:8443/inbox/42?tab=unread#top")
+        );
+        assert_eq!(
+            map("myapp://").as_deref(),
+            Some("https://example.com:8443/")
+        );
+        assert_eq!(
+            map("myapp:///evil.com/x").as_deref(),
+            Some("https://example.com:8443/evil.com/x")
+        );
+        assert_eq!(
+            map("myapp://a/\\evil.com").as_deref(),
+            Some("https://example.com:8443/a//evil.com")
+        );
+        assert_eq!(
+            deep_link_target(
+                "file:///index.html",
+                &tauri::Url::parse("myapp://a").unwrap()
+            ),
+            None
+        );
     }
 }

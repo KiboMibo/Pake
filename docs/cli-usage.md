@@ -637,6 +637,17 @@ pake https://example.com --name MyApp --download-dir '~/Documents/MyApp'
 
 Use an absolute path (such as `C:\Users\Alice\Documents\MyApp` on Windows) or a quoted `~/path`. Quoting preserves `~` so it resolves to the app user's home when the app runs, rather than the build machine's home. Missing directories are created on the first download. Relative paths are rejected; an inaccessible directory causes the download to fail without silently saving elsewhere. The equivalent JSON config field is `downloadDir`. Rebuild an existing app to change its download directory.
 
+#### [deep-link]
+
+Register a custom URL scheme so links like `myapp://some/path` open the packaged app (or focus the running instance) and navigate the main window to the same path on the app's site.
+
+```bash
+pake https://example.com/app --name MyApp --deep-link myapp
+# myapp://inbox/42?tab=unread -> https://example.com/inbox/42?tab=unread
+```
+
+The scheme must be lowercase and match `^[a-z][a-z0-9+.-]*$`; pass it without `://`. The link's path, query, and fragment are kept and appended to the origin (scheme and host) of the app URL. On Linux the `.deb`/AppImage desktop entry declares `x-scheme-handler/<scheme>` and the app also registers the handler for the current user on launch. The equivalent JSON config field is `deepLink`.
+
 #### [proxy-url]
 
 Set proxy server for all network requests. Supports HTTP, HTTPS, and SOCKS5. Available on Windows and Linux. On macOS, requires macOS 14+.

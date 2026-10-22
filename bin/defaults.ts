@@ -34,6 +34,7 @@ export const DEFAULT_PAKE_OPTIONS: PakeCliOptions = {
   systemTrayIcon: '',
   proxyUrl: '',
   downloadDir: '',
+  deepLink: '',
   basicAuth: false,
   debug: false,
   json: false,

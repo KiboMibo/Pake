@@ -121,6 +121,9 @@ pub struct PakeConfig {
     pub proxy_url: String,
     #[serde(default)]
     pub download_dir: String,
+    /// Custom URL scheme (without `://`) handled as a deep link; empty disables it.
+    #[serde(default)]
+    pub deep_link: String,
     /// Prompt for HTTP Basic credentials at runtime on macOS. WKWebView does
     /// not provide its own 401 login dialog, while Windows and Linux WebViews
     /// handle this flow natively.

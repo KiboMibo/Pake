@@ -86,6 +86,12 @@
       "description": "App download directory: an absolute path or ~/path resolved against the app user's home at runtime. Empty uses system Downloads. Created on first download if missing.",
       "default": ""
     },
+    "deepLink": {
+      "type": "string",
+      "pattern": "^([a-z][a-z0-9+.-]*)?$",
+      "description": "Custom URL scheme the app handles (e.g. myapp): myapp://path opens the app and navigates to <app origin>/path. Empty disables it.",
+      "default": ""
+    },
     "proxyUrl": {
       "type": "string",
       "description": "Proxy URL for all network requests (http://, https://, socks5://).",
